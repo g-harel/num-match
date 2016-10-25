@@ -25,13 +25,8 @@ for (let i = 0; i < board.length; i++) {
         let currentval = board[i][j].val;
         let adjacent_cells = adjacent(board, i, j);
         let diagonal_cells = diagonal(board, i, j);
-        if (currentval) {
-            console.log(`[${i},${j}] is ${currentval} and has ${adjacent_cells.reduce(function(pre, cur) {
-                return pre + (cur && cur.val === currentval)?1:0;
-            }, 0)} neighbors`);
-        }
         if (currentval !== 0 && adjacent_cells.reduce(function(pre, cur) {
-            return pre + (cur && cur.val === currentval)?1:0;
+            return pre + ((cur && cur.val === currentval)?1:0);
         }, 0) < 2) {
             let nextpos = adjacent_cells.reduce(function(pre, cur) {
                 if (cur === undefined) {
@@ -51,12 +46,15 @@ for (let i = 0; i < board.length; i++) {
             }, undefined);
             if (nextpos !== null && nextpos !== undefined) {
                 board[nextpos[0]][nextpos[1]].val = currentval;
+                i = 0;
+                j = -1;
+                continue;
             }
         }
     }
 }
 
-//print();
+print();
 
 // returns array of all adjacent neighbor cells
 function adjacent(board, m, n) {
