@@ -25,9 +25,7 @@ for (let i = 0; i < board.length; i++) {
         let currentval = board[i][j].val;
         let adjacent_cells = adjacent(board, i, j);
         let diagonal_cells = diagonal(board, i, j);
-        if (currentval !== 0 && adjacent_cells.reduce(function(pre, cur) {
-            return pre + ((cur && cur.val === currentval)?1:0);
-        }, 0) < 2) {
+        if (currentval !== 0 && count_twins(adjacent_cells, currentval) < 2) {
             let nextpos = adjacent_cells.reduce(function(pre, cur) {
                 if (cur === undefined) {
                     return pre;
@@ -55,6 +53,7 @@ for (let i = 0; i < board.length; i++) {
 }
 
 print();
+console.log(is_solved(board))
 
 // returns array of all adjacent neighbor cells
 function adjacent(board, m, n) {
@@ -103,6 +102,42 @@ function diagonal(board, m, n) {
 // returns array of all neighbor cells 
 function neighbors(board, m, n) {
     return adjacent(board, m, n).concat(diagonal(board, m, n));
+}
+
+// checks that the board is in a solved state
+function is_solved(board) {
+    for (let i = 0; i < board.length; i++) {
+        for (let j = 0; j < board[i].length; j++) {
+            let currentval = board[i][j].val;
+            let adjacent_cells = adjacent(board, i, j);
+            let twins = count_twins(adjacent_cells, currentval);
+            if (currentval === 0) {
+                return false;
+            }
+            if (board[i][j].solved) {
+                if (twins !== 1) {
+                    return false;
+                } else {
+                    continue;
+                }
+            }
+            if (twins !== 2) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// counts the number of times currentval appears in source
+function count_twins(source, currentval) {
+    return source.reduce(function(pre, cur) {
+        if (cur && (cur.val === currentval)) {
+            return pre + 1;
+        } else {
+            return pre;
+        }
+    }, 0)
 }
 
 // prints board to console
