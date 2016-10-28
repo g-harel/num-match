@@ -1,6 +1,6 @@
 'use strict';
 
-let board = [
+let initial_board = [
     [1,0,0,2,3],
     [0,0,0,4,0],
     [0,0,4,0,0],
@@ -9,53 +9,56 @@ let board = [
 ];
 
 // marking solved cells
-for (let i = 0; i < board.length; i++) {
-    for (let j = 0; j < board[i].length; j++) {
-        board[i][j] = {
-            val: board[i][j],
-            solved: board[i][j]?true:false
+for (let i = 0; i < initial_board.length; i++) {
+    for (let j = 0; j < initial_board[i].length; j++) {
+        initial_board[i][j] = {
+            val: initial_board[i][j],
+            solved: initial_board[i][j]?true:false
         }
     }
 }
 
-print();
+print(initial_board);
 
-for (let i = 0; i < board.length; i++) {
-    for (let j = 0; j < board[i].length; j++) {
-        let currentval = board[i][j].val;
-        let adjacent_cells = adjacent(board, i, j);
-        let diagonal_cells = diagonal(board, i, j);
-        if (currentval !== 0) {
-            if(count_twins(adjacent_cells, currentval) < 2) {
-                let nextpos = adjacent_cells.reduce(function(pre, cur) {
-                    if (cur === undefined) {
-                        return pre;
-                    }
-                    if (pre === null) {
-                        return null;
-                    }
-                    if (cur.val === 0) {
-                        if (pre === undefined) {
-                            return cur.address;
-                        } else {
-                            pre = null;
+// solves a given board as much as possible
+function solve(board) {
+    for (let i = 0; i < board.length; i++) {
+        for (let j = 0; j < board[i].length; j++) {
+            let currentval = board[i][j].val;
+            let adjacent_cells = adjacent(board, i, j);
+            let diagonal_cells = diagonal(board, i, j);
+            let twins_count = count_twins(adjacent_cells, currentval);
+            if (currentval !== 0) {
+                if(twins_count < 2) {
+                    let nextpos;
+                    let count = adjacent_cells.length || 0;
+                    while (count--) {
+                        let cur = adjacent_cells[count];
+                        if (cur !== undefined && cur.val === 0) {
+                            if (nextpos === undefined) {
+                                nextpos = cur.address;
+                            } else {
+                                nextpos = null;
+                                break;
+                            }
                         }
                     }
-                    return pre;
-                }, undefined);
-                if (nextpos !== null && nextpos !== undefined) {
-                    board[nextpos[0]][nextpos[1]].val = currentval;
-                    i = 0;
-                    j = -1;
-                    continue;
+                    if (nextpos !== null && nextpos !== undefined) {
+                        board[nextpos[0]][nextpos[1]].val = currentval;
+                        i = 0;
+                        j = -1;
+                        continue;
+                    }
                 }
             }
         }
     }
+    return board;
 }
 
-print();
-console.log(is_solved(board))
+let b = solve(initial_board);
+print(b);
+console.log(is_solved(b));
 
 
 // checks that the board is in a solved state
@@ -85,24 +88,26 @@ function is_solved(board) {
 
 // counts the number of times currentval appears in source
 function count_twins(source, currentval) {
-    return source.reduce(function(pre, cur) {
+    let temp = 0;
+    let count = source.length || 0;
+    while (count--) {
+        let cur = source[count];
         if (cur && (cur.val === currentval)) {
-            return pre + 1;
-        } else {
-            return pre;
-        }
-    }, 0)
+            temp++;
+        } 
+    }
+    return temp;
 }
 
 // counts the number of undefined values in source
 function count_walls(source) {
-    return source.reduce(function(pre, cur) {
-        if (cur === undefined) {
-            return pre + 1;
-        } else {
-            return pre;
-        }
-    }, 0)
+    let temp = 0;
+    let count = source.length || 0;
+    while (count--) {
+       if (source[count] === undefined) {
+            temp++;
+        } 
+    }
 }
 
 // travels in the M, N direction until the limit or the edge
@@ -115,10 +120,12 @@ function travel(board, m, n, M, N, limit) {
     }
     let temp = [];
     for (let i = 0; !(i >= limit); i++) {
-        let _m = Math.floor(m + M*i);
-        let _n = Math.floor(n + N*i);
+        m += M;
+        n += N;
+        let _m = m >> 0;
+        let _n = n >> 0;
         let cell = board[_m] && board[_m][_n];
-        if (!cell) {
+        if (cell === undefined) {
             break;
         }
         temp.push(cell);
@@ -177,7 +184,7 @@ function neighbors(board, m, n) {
 }
 
 // prints board to console
-function print() {
+function print(board) {
     let temp = '';
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
