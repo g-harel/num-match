@@ -38,10 +38,10 @@ for (let i = 0; i < initial_board.length; i++) {
     }
 }
 
-print(marked_board);
+print_board(marked_board);
 
 // solves a given board as much as possible
-function solve(board: Cell[][]): Cell[][] {
+var solve = function(board: Cell[][]): Cell[][] {
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
             let cell = board[i][j];
@@ -83,13 +83,13 @@ function solve(board: Cell[][]): Cell[][] {
 }
 
 var b = solve(marked_board);
-print(b);
+print_board(b);
 console.log(find_twins(adjacent(b, 6, 1), 7));
 console.log(is_solved(b));
 
 
 // checks that the board is in a solved state
-function is_solved(board: Cell[][]): boolean {
+var is_solved = function(board: Cell[][]): boolean {
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
             let currentval = board[i][j].val;
@@ -114,7 +114,7 @@ function is_solved(board: Cell[][]): boolean {
 }
 
 // counts the number of times currentval appears in source
-function find_twins(source: Cell[], currentval: number) {
+var find_twins = function(source: Cell[], currentval: number) {
     let temp = 0;
     let addresses: Number[][] = [];
     let count = source.length || 0;
@@ -132,7 +132,7 @@ function find_twins(source: Cell[], currentval: number) {
 }
 
 // counts the number of undefined values in source
-function count_walls(source: Cell[]): number {
+var count_walls = function(source: Cell[]): number {
     let temp = 0;
     let count = source.length || 0;
     while (count--) {
@@ -144,7 +144,7 @@ function count_walls(source: Cell[]): number {
 }
 
 // travels in the M, N direction until the limit or the edge
-function travel(board: Cell[][], m: number, n: number, M: number, N: number, limit: number): Cell[] {
+var travel = function(board: Cell[][], m: number, n: number, M: number, N: number, limit: number): Cell[] {
     limit = +limit;
     M = M || 0;
     N = N || 0;
@@ -167,7 +167,7 @@ function travel(board: Cell[][], m: number, n: number, M: number, N: number, lim
 }
 
 // returns array of all adjacent neighbor cells
-function adjacent(board: Cell[][], m: number, n: number): Cell[] {
+var adjacent = function(board: Cell[][], m: number, n: number): Cell[] {
     let temp = [];
     temp.push(board[m] && board[m][n+1]);
     temp.push(board[m] && board[m][n-1]);
@@ -177,7 +177,7 @@ function adjacent(board: Cell[][], m: number, n: number): Cell[] {
 }
 
 // returns array of all diagonal neighbor cells
-function diagonal(board: Cell[][], m: number, n: number): Cell[] {
+var diagonal = function(board: Cell[][], m: number, n: number): Cell[] {
     let temp = [];
     temp.push(board[m+1] && board[m+1][n+1]);
     temp.push(board[m-1] && board[m-1][n-1]);
@@ -187,12 +187,12 @@ function diagonal(board: Cell[][], m: number, n: number): Cell[] {
 }
 
 // returns array of all neighbor cells 
-function neighbors(board: Cell[][], m: number, n: number): Cell[] {
+var neighbors = function(board: Cell[][], m: number, n: number): Cell[] {
     return adjacent(board, m, n).concat(diagonal(board, m, n));
 }
 
 // prints board to console
-function print(board: Cell[][]) {
+var print_board = function(board: Cell[][]): void {
     let temp = '';
     for (let i = 0; i < board.length; i++) {
         temp += '..';
