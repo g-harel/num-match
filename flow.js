@@ -27,7 +27,6 @@ for (var i = 0; i < initial_board.length; i++) {
         };
     }
 }
-print_board(marked_board);
 // solves a given board as much as possible
 var solve = function (board) {
     for (var i = 0; i < board.length; i++) {
@@ -38,7 +37,6 @@ var solve = function (board) {
             //let diagonal_cells = diagonal(board, i, j);
             var twins = find_twins(adjacent_cells, currentval);
             if (cell.solved && twins.count > 0) {
-                board[i][j].solved = true;
                 continue;
             }
             if (currentval !== 0) {
@@ -70,10 +68,6 @@ var solve = function (board) {
     }
     return board;
 };
-var b = solve(marked_board);
-print_board(b);
-console.log(find_twins(adjacent(b, 6, 1), 7));
-console.log(is_solved(b));
 // checks that the board is in a solved state
 var is_solved = function (board) {
     for (var i = 0; i < board.length; i++) {
@@ -192,3 +186,8 @@ var print_board = function (board) {
     }
     console.log('\n' + temp.trim());
 };
+print_board(marked_board);
+var b = solve(marked_board);
+print_board(b);
+console.log(find_twins(adjacent(b, 6, 1), 7));
+console.log(is_solved(b));
