@@ -33,35 +33,39 @@ var solve = function (board) {
         for (var j = 0; j < board[i].length; j++) {
             var cell = board[i][j];
             var currentval = cell.val;
+            if (currentval === 0) {
+                continue;
+            }
             var adjacent_cells = adjacent(board, i, j);
-            //let diagonal_cells = diagonal(board, i, j);
             var twins = find_twins(adjacent_cells, currentval);
             if (cell.solved && twins.count > 0) {
                 continue;
             }
-            if (currentval !== 0) {
-                if (twins.count < 2) {
-                    var nextpos = void 0;
-                    var count = adjacent_cells.length || 0;
-                    while (count--) {
-                        var cur = adjacent_cells[count];
-                        if (cur !== undefined && cur.val === 0) {
-                            if (nextpos === undefined) {
-                                nextpos = cur.address;
-                            }
-                            else {
-                                nextpos = null;
-                                break;
-                            }
+            if (twins.count === 2) {
+                board[i][j].solved = true;
+                continue;
+            }
+            if (twins.count < 2) {
+                var nextpos = void 0;
+                var count = adjacent_cells.length || 0;
+                while (count--) {
+                    var cur = adjacent_cells[count];
+                    if (cur !== undefined && cur.val === 0) {
+                        if (nextpos === undefined) {
+                            nextpos = cur.address;
+                        }
+                        else {
+                            nextpos = null;
+                            break;
                         }
                     }
-                    if (nextpos !== null && nextpos !== undefined) {
-                        board[nextpos[0]][nextpos[1]].val = currentval;
-                        board[i][j].solved = true;
-                        i = 0;
-                        j = -1;
-                        continue;
-                    }
+                }
+                if (nextpos !== null && nextpos !== undefined) {
+                    board[nextpos[0]][nextpos[1]].val = currentval;
+                    board[i][j].solved = true;
+                    i = 0;
+                    j = -1;
+                    continue;
                 }
             }
         }
