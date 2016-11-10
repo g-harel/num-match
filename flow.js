@@ -27,25 +27,79 @@ for (var i = 0; i < initial_board.length; i++) {
         };
     }
 }
-// solves a given board as much as possible
-var solve = function (board) {
+// tries to solve a board while making assumptions when unsure
+var smart_solve = function (board) {
+    var temp = solve_absolute(board);
+    if (temp.solved) {
+        return temp;
+    }
+    for (var i = 0; i < temp.board.length; i++) {
+        for (var j = 0; j < temp.board[i].length; j++) {
+            var cell = temp.board[i][j];
+            var currentval = cell.val;
+            // empty cell
+            if (currentval === 0) {
+                continue;
+            }
+            var adjacent_cells = adjacent(temp.board, i, j);
+            var twins = find_around(adjacent_cells, currentval);
+            var empty = find_around(adjacent_cells, 0);
+            if (empty.length === 2 && !cell.solved && twins.length < 2) {
+                var dupe1 = temp.board.slice(0);
+                dupe1[String(empty[0][0])][String(empty[0][1])] = {
+                    val: currentval,
+                    solved: false,
+                    address: [i, j]
+                };
+                console.log('assume1');
+                print_board(dupe1, false);
+                var dupe1_res = smart_solve(dupe1);
+                if (dupe1_res.solved) {
+                    return dupe1_res;
+                }
+                var dupe2 = temp.board.slice(0);
+                dupe2[String(empty[1][0])][String(empty[1][1])] = {
+                    val: currentval,
+                    solved: false,
+                    address: [i, j]
+                };
+                console.log('assume2');
+                print_board(dupe2, false);
+                var dupe2_res = smart_solve(dupe1);
+                if (dupe2_res.solved) {
+                    return dupe2_res;
+                }
+            }
+        }
+    }
+    return {
+        solved: false,
+        board: temp.board
+    };
+};
+// tries solve a given board as much as possible
+var solve_absolute = function (board) {
     for (var i = 0; i < board.length; i++) {
         for (var j = 0; j < board[i].length; j++) {
             var cell = board[i][j];
             var currentval = cell.val;
+            // empty cell
             if (currentval === 0) {
                 continue;
             }
             var adjacent_cells = adjacent(board, i, j);
-            var twins = find_twins(adjacent_cells, currentval);
-            if (cell.solved && twins.count > 0) {
+            var twins = find_around(adjacent_cells, currentval);
+            // is already solved
+            if (cell.solved && twins.length > 0) {
                 continue;
             }
-            if (twins.count === 2) {
+            // is newly solved
+            if (twins.length === 2) {
                 board[i][j].solved = true;
                 continue;
             }
-            if (twins.count < 2) {
+            // needs a successor
+            if (twins.length < 2) {
                 var nextpos = void 0;
                 var count = adjacent_cells.length || 0;
                 while (count--) {
@@ -62,6 +116,7 @@ var solve = function (board) {
                 }
                 if (nextpos !== null && nextpos !== undefined) {
                     board[nextpos[0]][nextpos[1]].val = currentval;
+                    print_board(board, false);
                     board[i][j].solved = true;
                     i = 0;
                     j = -1;
@@ -70,7 +125,10 @@ var solve = function (board) {
             }
         }
     }
-    return board;
+    return {
+        solved: is_solved(board),
+        board: board
+    };
 };
 // checks that the board is in a solved state
 var is_solved = function (board) {
@@ -78,19 +136,19 @@ var is_solved = function (board) {
         for (var j = 0; j < board[i].length; j++) {
             var currentval = board[i][j].val;
             var adjacent_cells = adjacent(board, i, j);
-            var twins = find_twins(adjacent_cells, currentval);
+            var twins = find_around(adjacent_cells, currentval);
             if (currentval === 0) {
                 return false;
             }
             if (board[i][j].solved) {
-                if (twins.count !== 1) {
+                if (twins.length !== 1) {
                     return false;
                 }
                 else {
                     continue;
                 }
             }
-            if (twins.count !== 2) {
+            if (twins.length !== 2) {
                 return false;
             }
         }
@@ -98,21 +156,16 @@ var is_solved = function (board) {
     return true;
 };
 // counts the number of times currentval appears in source
-var find_twins = function (source, currentval) {
-    var temp = 0;
+var find_around = function (source, currentval) {
     var addresses = [];
     var count = source.length || 0;
     while (count--) {
         var cur = source[count];
         if (cur && (cur.val === currentval)) {
-            temp++;
             addresses.push(cur.address);
         }
     }
-    return {
-        count: temp,
-        addresses: addresses
-    };
+    return addresses;
 };
 // counts the number of undefined values in source
 var count_walls = function (source) {
@@ -170,16 +223,18 @@ var neighbors = function (board, m, n) {
     return adjacent(board, m, n).concat(diagonal(board, m, n));
 };
 // prints board to console
-var print_board = function (board) {
+var print_board = function (board, solve) {
     var temp = '';
-    for (var i = 0; i < board.length; i++) {
-        temp += '..';
-        for (var j = 0; j < board[i].length; j++) {
-            temp += ((board[i][j].solved) ? 'x' : '.' || '.') + "..";
+    if (solve) {
+        for (var i = 0; i < board.length; i++) {
+            temp += '>  ..';
+            for (var j = 0; j < board[i].length; j++) {
+                temp += ((board[i][j].solved) ? 'x' : '.' || '.') + "..";
+            }
+            temp += '\n';
         }
-        temp += '\n';
+        console.log('\n' + temp.trim());
     }
-    console.log('\n' + temp.trim());
     temp = '';
     for (var i = 0; i < board.length; i++) {
         temp += '..';
@@ -190,8 +245,7 @@ var print_board = function (board) {
     }
     console.log('\n' + temp.trim());
 };
-print_board(marked_board);
-var b = solve(marked_board);
-print_board(b);
-console.log(find_twins(adjacent(b, 6, 1), 7));
-console.log(is_solved(b));
+print_board(marked_board, true);
+var b = smart_solve(marked_board);
+print_board(b.board, true);
+console.log(b.solved);
