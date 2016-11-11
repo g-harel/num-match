@@ -39,8 +39,18 @@ for (let i = 0; i < initial_board.length; i++) {
 }
 
 // tries to solve a board while making assumptions when unsure
-var smart_solve = function(board: Cell[][]): {solved: boolean, board: Cell[][]} {
+var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, board: Cell[][]} {
+    console.log(change)
+    if (change !== undefined) {
+        board[String(change.address[0])][String(change.address[1])] = change;
+    }
+    print_board(board, false);
     let temp = solve_absolute(board);
+    console.log('after')
+    print_board(board, false);
+    if (!temp.change) {
+        return temp;
+    }
     if (temp.solved) {
         return temp;
     }
@@ -48,7 +58,6 @@ var smart_solve = function(board: Cell[][]): {solved: boolean, board: Cell[][]} 
         for (let j = 0; j < temp.board[i].length; j++) {
             let cell = temp.board[i][j];
             let currentval = cell.val;
-            // empty cell
             if (currentval === 0) {
                 continue;
             }
@@ -56,41 +65,26 @@ var smart_solve = function(board: Cell[][]): {solved: boolean, board: Cell[][]} 
             let twins = find_around(adjacent_cells, currentval);
             let empty = find_around(adjacent_cells, 0);
             if(empty.length === 2 && !cell.solved && twins.length < 2) {
-                let dupe1 = temp.board.slice(0);
-                dupe1[String(empty[0][0])][String(empty[0][1])] = {
+                let option1 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
                     val: currentval,
-                    solved: false,
-                    address: [i,j]
-                }
-                console.log('assume1')
-    print_board(dupe1, false)
-                let dupe1_res = smart_solve(dupe1);
-                if (dupe1_res.solved) {
-                    return dupe1_res;
-                }
-                let dupe2 = temp.board.slice(0);
-                dupe2[String(empty[1][0])][String(empty[1][1])] = {
+                    address: [Number(empty[0][0]),Number(empty[0][1])],
+                    solved: false
+                });
+                let option2 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
                     val: currentval,
-                    solved: false,
-                    address: [i,j]
-                }
-                console.log('assume2')
-    print_board(dupe2, false)
-                let dupe2_res = smart_solve(dupe1);
-                if (dupe2_res.solved) {
-                    return dupe2_res;
-                }
+                    address: [Number(empty[1][0]),Number(empty[1][1])],
+                    solved: false
+                });
+                return (option1.solved && option1) || (option1.solved && option1) || { board:temp.board, solved:false };
             }
         }
     }
-    return {
-        solved: false,
-        board: temp.board
-    }
+    return temp;
 }
 
 // tries solve a given board as much as possible
-var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][]} {
+var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][], change?: boolean} {
+    let change = false;
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
             let cell = board[i][j];
@@ -127,9 +121,8 @@ var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][
                 }
                 if (nextpos !== null && nextpos !== undefined) {
                     board[nextpos[0]][nextpos[1]].val = currentval;
-                    
-    print_board(board, false)
                     board[i][j].solved = true;
+                    change = true;
                     i = 0;
                     j = -1;
                     continue;
@@ -139,7 +132,8 @@ var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][
     }
     return {
         solved: is_solved(board),
-        board: board
+        board: board,
+        change: change
     };
 }
 
@@ -242,7 +236,7 @@ var neighbors = function(board: Cell[][], m: number, n: number): Cell[] {
 }
 
 // prints board to console
-var print_board = function(board: Cell[][], solve: boolean): void {
+var print_board = function(board: Cell[][], solve?: boolean): void {
     let temp = '';
     if (solve) {
         for (let i = 0; i < board.length; i++) {
@@ -252,7 +246,7 @@ var print_board = function(board: Cell[][], solve: boolean): void {
             }
             temp += '\n';
         }
-        console.log('\n' + temp.trim());
+        console.log(temp.trim() + '\n');
     }
     temp = '';
     for (let i = 0; i < board.length; i++) {
@@ -262,7 +256,7 @@ var print_board = function(board: Cell[][], solve: boolean): void {
         }
         temp += '\n';
     }
-    console.log('\n' + temp.trim());
+    console.log(temp.trim() + '\n');
 }
 
 print_board(marked_board, true);

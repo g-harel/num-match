@@ -28,8 +28,18 @@ for (var i = 0; i < initial_board.length; i++) {
     }
 }
 // tries to solve a board while making assumptions when unsure
-var smart_solve = function (board) {
+var smart_solve = function (board, change) {
+    console.log(change);
+    if (change !== undefined) {
+        board[String(change.address[0])][String(change.address[1])] = change;
+    }
+    print_board(board, false);
     var temp = solve_absolute(board);
+    console.log('after');
+    print_board(board, false);
+    if (!temp.change) {
+        return temp;
+    }
     if (temp.solved) {
         return temp;
     }
@@ -37,7 +47,6 @@ var smart_solve = function (board) {
         for (var j = 0; j < temp.board[i].length; j++) {
             var cell = temp.board[i][j];
             var currentval = cell.val;
-            // empty cell
             if (currentval === 0) {
                 continue;
             }
@@ -45,40 +54,25 @@ var smart_solve = function (board) {
             var twins = find_around(adjacent_cells, currentval);
             var empty = find_around(adjacent_cells, 0);
             if (empty.length === 2 && !cell.solved && twins.length < 2) {
-                var dupe1 = temp.board.slice(0);
-                dupe1[String(empty[0][0])][String(empty[0][1])] = {
+                var option1 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
                     val: currentval,
-                    solved: false,
-                    address: [i, j]
-                };
-                console.log('assume1');
-                print_board(dupe1, false);
-                var dupe1_res = smart_solve(dupe1);
-                if (dupe1_res.solved) {
-                    return dupe1_res;
-                }
-                var dupe2 = temp.board.slice(0);
-                dupe2[String(empty[1][0])][String(empty[1][1])] = {
+                    address: [Number(empty[0][0]), Number(empty[0][1])],
+                    solved: false
+                });
+                var option2 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
                     val: currentval,
-                    solved: false,
-                    address: [i, j]
-                };
-                console.log('assume2');
-                print_board(dupe2, false);
-                var dupe2_res = smart_solve(dupe1);
-                if (dupe2_res.solved) {
-                    return dupe2_res;
-                }
+                    address: [Number(empty[1][0]), Number(empty[1][1])],
+                    solved: false
+                });
+                return (option1.solved && option1) || (option1.solved && option1) || { board: temp.board, solved: false };
             }
         }
     }
-    return {
-        solved: false,
-        board: temp.board
-    };
+    return temp;
 };
 // tries solve a given board as much as possible
 var solve_absolute = function (board) {
+    var change = false;
     for (var i = 0; i < board.length; i++) {
         for (var j = 0; j < board[i].length; j++) {
             var cell = board[i][j];
@@ -116,8 +110,8 @@ var solve_absolute = function (board) {
                 }
                 if (nextpos !== null && nextpos !== undefined) {
                     board[nextpos[0]][nextpos[1]].val = currentval;
-                    print_board(board, false);
                     board[i][j].solved = true;
+                    change = true;
                     i = 0;
                     j = -1;
                     continue;
@@ -127,7 +121,8 @@ var solve_absolute = function (board) {
     }
     return {
         solved: is_solved(board),
-        board: board
+        board: board,
+        change: change
     };
 };
 // checks that the board is in a solved state
@@ -233,7 +228,7 @@ var print_board = function (board, solve) {
             }
             temp += '\n';
         }
-        console.log('\n' + temp.trim());
+        console.log(temp.trim() + '\n');
     }
     temp = '';
     for (var i = 0; i < board.length; i++) {
@@ -243,7 +238,7 @@ var print_board = function (board, solve) {
         }
         temp += '\n';
     }
-    console.log('\n' + temp.trim());
+    console.log(temp.trim() + '\n');
 };
 print_board(marked_board, true);
 var b = smart_solve(marked_board);
