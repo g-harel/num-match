@@ -2,7 +2,7 @@
 
 interface Cell {
     val: number;
-    solved: boolean;
+    anchor: boolean;
     address: Number[];
 }
 
@@ -26,13 +26,13 @@ initial_board = [
 
 var marked_board: Cell[][] = [];
 
-// marking solved cells
+// marking anchor cells
 for (let i = 0; i < initial_board.length; i++) {
     marked_board[i] = [];
     for (let j = 0; j < initial_board[i].length; j++) {
         marked_board[i][j] = {
             val: initial_board[i][j],
-            solved: initial_board[i][j]?true:false,
+            anchor: initial_board[i][j]?true:false,
             address: [i,j]
         }
     }
@@ -40,51 +40,54 @@ for (let i = 0; i < initial_board.length; i++) {
 
 // tries to solve a board while making assumptions when unsure
 var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, board: Cell[][]} {
-    console.log(change)
+    // make specified change if required
     if (change !== undefined) {
         board[String(change.address[0])][String(change.address[1])] = change;
     }
-    print_board(board, false);
+    // attempt to solve
     let temp = solve_absolute(board);
-    console.log('after')
-    print_board(board, false);
-    if (!temp.change) {
-        return temp;
-    }
     if (temp.solved) {
         return temp;
     }
+    // loop through cells
     for (let i = 0; i < temp.board.length; i++) {
         for (let j = 0; j < temp.board[i].length; j++) {
             let cell = temp.board[i][j];
             let currentval = cell.val;
+            // empty cells
             if (currentval === 0) {
                 continue;
             }
             let adjacent_cells = adjacent(temp.board, i, j);
             let twins = find_around(adjacent_cells, currentval);
             let empty = find_around(adjacent_cells, 0);
-            if(empty.length === 2 && !cell.solved && twins.length < 2) {
+            // cells with two alternatives
+            if(empty.length === 2 && !cell.anchor && twins.length < 2) {
+                // attempt to smart solve each possible option
                 let option1 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
                     val: currentval,
                     address: [Number(empty[0][0]),Number(empty[0][1])],
-                    solved: false
+                    anchor: false
                 });
+                if (option1.solved) {
+                    return option1;
+                }
                 let option2 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
                     val: currentval,
                     address: [Number(empty[1][0]),Number(empty[1][1])],
-                    solved: false
+                    anchor: false
                 });
-                return (option1.solved && option1) || (option1.solved && option1) || { board:temp.board, solved:false };
+                if (option2.solved) {
+                    return option2;
+                }
             }
         }
     }
     return temp;
 }
 
-// tries solve a given board as much as possible
-var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][], change?: boolean} {
-    let change = false;
+// tries solve a given board with guaranteed values
+var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][]} {
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
             let cell = board[i][j];
@@ -96,18 +99,18 @@ var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][
             let adjacent_cells = adjacent(board, i, j);
             let twins = find_around(adjacent_cells, currentval);
             // is already solved
-            if (cell.solved && twins.length > 0) {
+            if (cell.anchor && twins.length === 1) {
                 continue;
             }
             // is newly solved
             if (twins.length === 2) {
-                board[i][j].solved = true;
                 continue;
             }
             // needs a successor
             if(twins.length < 2) {
                 let nextpos;
                 let count = adjacent_cells.length || 0;
+                // find singular empty cell in adjacent
                 while (count--) {
                     let cur = adjacent_cells[count];
                     if (cur !== undefined && cur.val === 0) {
@@ -121,8 +124,6 @@ var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][
                 }
                 if (nextpos !== null && nextpos !== undefined) {
                     board[nextpos[0]][nextpos[1]].val = currentval;
-                    board[i][j].solved = true;
-                    change = true;
                     i = 0;
                     j = -1;
                     continue;
@@ -132,8 +133,7 @@ var solve_absolute = function(board: Cell[][]): {solved: boolean, board: Cell[][
     }
     return {
         solved: is_solved(board),
-        board: board,
-        change: change
+        board: board
     };
 }
 
@@ -144,16 +144,19 @@ var is_solved = function(board: Cell[][]): boolean {
             let currentval = board[i][j].val;
             let adjacent_cells = adjacent(board, i, j);
             let twins = find_around(adjacent_cells, currentval);
+            // cell has a value
             if (currentval === 0) {
                 return false;
             }
-            if (board[i][j].solved) {
+            // anchors have single twin
+            if (board[i][j].anchor) {
                 if (twins.length !== 1) {
                     return false;
                 } else {
                     continue;
                 }
             }
+            // other cells have exactly two twins
             if (twins.length !== 2) {
                 return false;
             }
@@ -162,7 +165,7 @@ var is_solved = function(board: Cell[][]): boolean {
     return true;
 }
 
-// counts the number of times currentval appears in source
+// counts the number of times currentval appears in source at .val
 var find_around = function(source: Cell[], currentval: number): Number[][] {
     let addresses = [];
     let count = source.length || 0;
@@ -175,41 +178,6 @@ var find_around = function(source: Cell[], currentval: number): Number[][] {
     return addresses;
 }
 
-// counts the number of undefined values in source
-var count_walls = function(source: Cell[]): number {
-    let temp = 0;
-    let count = source.length || 0;
-    while (count--) {
-       if (source[count] === undefined) {
-            temp++;
-        } 
-    }
-    return temp;
-}
-
-// travels in the M, N direction until the limit or the edge
-var travel = function(board: Cell[][], m: number, n: number, M: number, N: number, limit: number): Cell[] {
-    limit = +limit;
-    M = M || 0;
-    N = N || 0;
-    if (M === 0 && N === 0) {
-        return [];
-    }
-    let temp = [];
-    for (let i = 0; !(i >= limit); i++) {
-        m += M;
-        n += N;
-        let _m = m >> 0;
-        let _n = n >> 0;
-        let cell = board[_m] && board[_m][_n];
-        if (cell === undefined) {
-            break;
-        }
-        temp.push(cell);
-    }
-    return temp;
-}
-
 // returns array of all adjacent neighbor cells
 var adjacent = function(board: Cell[][], m: number, n: number): Cell[] {
     let temp = [];
@@ -220,35 +188,9 @@ var adjacent = function(board: Cell[][], m: number, n: number): Cell[] {
     return temp;
 }
 
-// returns array of all diagonal neighbor cells
-var diagonal = function(board: Cell[][], m: number, n: number): Cell[] {
-    let temp = [];
-    temp.push(board[m+1] && board[m+1][n+1]);
-    temp.push(board[m-1] && board[m-1][n-1]);
-    temp.push(board[m+1] && board[m+1][n-1]);
-    temp.push(board[m-1] && board[m-1][n+1]);
-    return temp;
-}
-
-// returns array of all neighbor cells 
-var neighbors = function(board: Cell[][], m: number, n: number): Cell[] {
-    return adjacent(board, m, n).concat(diagonal(board, m, n));
-}
-
 // prints board to console
-var print_board = function(board: Cell[][], solve?: boolean): void {
+var print_board = function(board: Cell[][]): void {
     let temp = '';
-    if (solve) {
-        for (let i = 0; i < board.length; i++) {
-            temp += '>  ..';
-            for (let j = 0; j < board[i].length; j++) {
-                temp += `${(board[i][j].solved)?'x':'.'||'.'}..`;
-            }
-            temp += '\n';
-        }
-        console.log(temp.trim() + '\n');
-    }
-    temp = '';
     for (let i = 0; i < board.length; i++) {
         temp += '..';
         for (let j = 0; j < board[i].length; j++) {
@@ -259,7 +201,12 @@ var print_board = function(board: Cell[][], solve?: boolean): void {
     console.log(temp.trim() + '\n');
 }
 
-print_board(marked_board, true);
+console.log('\ninitial board:');
+print_board(marked_board);
 var b = smart_solve(marked_board);
-print_board(b.board, true);
-console.log(b.solved);
+if (b.solved) {
+    console.log('solved:')
+    print_board(b.board);
+} else {
+    console.log('could not solve');
+}

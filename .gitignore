@@ -1,6 +1,3 @@
 .vscode
-
-jsconfig.json
-tsconfig.json
-
+*.json
 *.js
