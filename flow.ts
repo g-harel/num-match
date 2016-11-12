@@ -6,37 +6,74 @@ interface Cell {
     address: Number[];
 }
 
-var initial_board: number[][] = [
-    [1,0,0,2,3],
+// keeping track of the number of assumptions
+var assumptions = 0;
+
+// test boards
+var boards: number[][][] = [
+    
+    // padding the front of the array
+    undefined,undefined,undefined,
+
+    // 3x3
+   [[1,2,3],
+    [0,2,0],
+    [0,1,3]],
+
+    // 4x4
+   [[0,1,3,3],
+    [0,2,4,0],
+    [0,0,0,0],
+    [0,1,2,4]],
+
+    // 5x5
+   [[1,0,0,2,3],
     [0,0,0,4,0],
     [0,0,4,0,0],
     [0,2,3,0,5],
-    [0,1,5,0,0],
-];
+    [0,1,5,0,0]],
 
-initial_board = [
-    [0,0,0,0,0,0,0],
+    // 6x6
+   [[0,0,0,0,0,0],
+    [2,1,5,4,0,0],
+    [1,0,0,6,0,0],
+    [6,0,0,0,0,2],
+    [0,5,0,0,4,3],
+    [0,0,0,3,0,0]],
+
+    // 7x7
+   [[0,0,0,0,0,0,0],
     [0,0,0,0,0,2,0],
     [1,2,3,1,0,0,0],
     [6,7,0,0,0,0,4],
     [0,0,0,4,0,0,0],
     [0,0,0,0,0,5,0],
-    [6,7,5,0,0,0,3],
-]
+    [6,7,5,0,0,0,3]],
 
-var marked_board: Cell[][] = [];
+    // 8x8
+   [[3,0,0,0,0,0,0,0],
+    [4,6,0,5,0,0,0,0],
+    [0,0,3,0,0,8,0,0],
+    [0,6,2,0,0,0,0,0],
+    [0,0,7,0,8,0,0,0],
+    [1,0,4,0,7,2,1,0],
+    [0,0,0,0,0,0,0,0],
+    [5,0,0,0,0,0,0,0]],
 
-// marking anchor cells
-for (let i = 0; i < initial_board.length; i++) {
-    marked_board[i] = [];
-    for (let j = 0; j < initial_board[i].length; j++) {
-        marked_board[i][j] = {
-            val: initial_board[i][j],
-            anchor: initial_board[i][j]?true:false,
-            address: [i,j]
-        }
-    }
-}
+    // 9x9
+   [[1,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,2,0],
+    [0,0,3,0,0,0,0,0,0],
+    [0,0,0,0,0,4,0,0,7],
+    [0,0,0,0,0,5,0,0,8],
+    [0,0,0,0,0,0,0,0,6],
+    [0,0,0,4,0,0,0,0,0],
+    [0,3,0,1,5,7,8,0,0],
+    [0,0,0,2,6,0,0,0,0]]
+];
+
+// Choose board to solve ([7] => 7x7)
+var initial_board = boards[9];
 
 // tries to solve a board while making assumptions when unsure
 var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, board: Cell[][]} {
@@ -62,7 +99,7 @@ var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, bo
             let twins = find_around(adjacent_cells, currentval);
             let empty = find_around(adjacent_cells, 0);
             // cells with two alternatives
-            if(empty.length === 2 && !cell.anchor && twins.length < 2) {
+            if(empty.length === 2 && ((!cell.anchor && twins.length < 2) || (cell.anchor && twins.length === 0))) {
                 // attempt to smart solve each possible option
                 let option1 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
                     val: currentval,
@@ -70,6 +107,7 @@ var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, bo
                     anchor: false
                 });
                 if (option1.solved) {
+                    assumptions++;
                     return option1;
                 }
                 let option2 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
@@ -78,6 +116,7 @@ var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, bo
                     anchor: false
                 });
                 if (option2.solved) {
+                    assumptions++;
                     return option2;
                 }
             }
@@ -201,12 +240,31 @@ var print_board = function(board: Cell[][]): void {
     console.log(temp.trim() + '\n');
 }
 
-console.log('\ninitial board:');
-print_board(marked_board);
-var b = smart_solve(marked_board);
-if (b.solved) {
-    console.log('solved:')
-    print_board(b.board);
+// solving
+if (initial_board === undefined) {
+    console.log(`\nplease choose a value from 3 and ${boards.length-1}`);
 } else {
-    console.log('could not solve');
+    // marking anchor cells
+    var marked_board: Cell[][] = [];
+    for (let i = 0; i < initial_board.length; i++) {
+        marked_board[i] = [];
+        for (let j = 0; j < initial_board[i].length; j++) {
+            marked_board[i][j] = {
+                val: initial_board[i][j],
+                anchor: initial_board[i][j]?true:false,
+                address: [i,j]
+            }
+        }
+    }
+
+    console.log('\ninitial board:');
+    print_board(marked_board);
+    var b = smart_solve(marked_board);
+    if (b.solved) {
+        console.log('solved with ' + assumptions + ' assumptions:')
+        print_board(b.board);
+    } else {
+        console.log('could not solve');
+        print_board(b.board);
+    }
 }
