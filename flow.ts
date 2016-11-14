@@ -3,7 +3,7 @@
 interface Cell {
     val: number;
     anchor: boolean;
-    address: Number[];
+    address: number[];
 }
 
 // keeping track of the number of assumptions
@@ -73,7 +73,7 @@ var boards: number[][][] = [
 ];
 
 // Choose board to solve ([7] => 7x7)
-var initial_board = boards[9];
+var initial_board = boards[8];
 
 // tries to solve a board while making assumptions when unsure
 var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, board: Cell[][]} {
@@ -101,23 +101,29 @@ var smart_solve = function(board: Cell[][], change?: Cell): {solved: boolean, bo
             // cells with two alternatives
             if(empty.length === 2 && ((!cell.anchor && twins.length < 2) || (cell.anchor && twins.length === 0))) {
                 // attempt to smart solve each possible option
-                let option1 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
-                    val: currentval,
-                    address: [Number(empty[0][0]),Number(empty[0][1])],
-                    anchor: false
-                });
-                if (option1.solved) {
-                    assumptions++;
-                    return option1;
+                let address = [Number(empty[0][0]), Number(empty[0][1])];
+                if (find_around(remove_anchors(adjacent(temp.board, address[0], address[1])), currentval).length < 2) {
+                    let option1 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
+                        val: currentval,
+                        address: address,
+                        anchor: false
+                    });
+                    if (option1.solved) {
+                        assumptions++;
+                        return option1;
+                    }
                 }
-                let option2 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
-                    val: currentval,
-                    address: [Number(empty[1][0]),Number(empty[1][1])],
-                    anchor: false
-                });
-                if (option2.solved) {
-                    assumptions++;
-                    return option2;
+                address = [Number(empty[1][0]), Number(empty[1][1])];
+                if (find_around(remove_anchors(adjacent(temp.board, address[0], address[1])), currentval).length < 2) {
+                    let option2 = smart_solve((JSON.parse(JSON.stringify(temp.board))), {
+                        val: currentval,
+                        address: address,
+                        anchor: false
+                    });
+                    if (option2.solved) {
+                        assumptions++;
+                        return option2;
+                    }
                 }
             }
         }
@@ -225,6 +231,17 @@ var adjacent = function(board: Cell[][], m: number, n: number): Cell[] {
     temp.push(board[m+1] && board[m+1][n]);
     temp.push(board[m-1] && board[m-1][n]);
     return temp;
+}
+
+// removes anchor cells from an array
+function remove_anchors(cells: Cell[]): Cell[] {
+    var result = [];
+    for (var i = 0; i < cells.length; ++i) {
+        if (cells[i].anchor) {
+            result.push(cells[i]);
+        }
+    }
+    return result;
 }
 
 // prints board to console
